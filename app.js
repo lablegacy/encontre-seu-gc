@@ -256,27 +256,26 @@ function filtrarGCs() {
         document
         .getElementById("search")
         .value
-        .toLowerCase();
+        .toLowerCase()
+        .trim();
 
 
     const resultado =
         gcs.filter(gc => {
 
             const correspondeBusca =
-
                 gc.nome
-                .toLowerCase()
-                .includes(busca)
+                    .toLowerCase()
+                    .includes(busca)
 
                 ||
 
                 gc.bairro
-                .toLowerCase()
-                .includes(busca);
+                    .toLowerCase()
+                    .includes(busca);
 
 
             const correspondeDia =
-
                 filtroAtual === "todos"
 
                 ||
@@ -284,15 +283,13 @@ function filtrarGCs() {
                 gc.dia === filtroAtual;
 
 
-            return
-                correspondeBusca
-                &&
-                correspondeDia;
+            return correspondeBusca && correspondeDia;
 
         });
 
 
     mostrarGCs(resultado);
+
 }
 
 
