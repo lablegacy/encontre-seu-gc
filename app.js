@@ -6,6 +6,10 @@ let filtroAtual = "todos";
 
 let localizacaoUsuario = null;
 
+let localizacaoBusca = null;
+
+let marcadorLocalizacao = null;
+
 
 /* =========================
    INICIAR MAPA
@@ -57,7 +61,8 @@ function mostrarGCs(lista) {
         marcador.bindPopup(`
             <strong>${gc.nome}</strong><br>
             ${gc.dia} • ${gc.horario}<br>
-            ${gc.bairro}
+            ${gc.bairro}<br>
+            ${gc.endereco}
         `);
 
 
@@ -117,12 +122,16 @@ function mostrarLista(lista) {
         let distanciaHTML = "";
 
 
-        if (localizacaoUsuario) {
+        const pontoReferencia =
+            localizacaoUsuario || localizacaoBusca;
+
+
+        if (pontoReferencia) {
 
             const distancia =
                 calcularDistancia(
-                    localizacaoUsuario.lat,
-                    localizacaoUsuario.lng,
+                    pontoReferencia.lat,
+                    pontoReferencia.lng,
                     gc.latitude,
                     gc.longitude
                 );
@@ -153,6 +162,8 @@ function mostrarLista(lista) {
                 🕐 ${gc.horario}<br>
 
                 📍 ${gc.bairro}<br>
+
+                🏠 ${gc.endereco}<br>
 
                 👥 ${gc.faixaEtaria}
 
@@ -193,7 +204,7 @@ function abrirGC(gc) {
         .setContent(`
 
             <div style="
-                min-width:220px;
+                min-width:240px;
                 font-family:Arial;
             ">
 
@@ -219,11 +230,16 @@ function abrirGC(gc) {
                     📍 ${gc.bairro}
                 </p>
 
+                <p>
+                    🏠 ${gc.endereco}
+                </p>
+
                 <br>
 
                 <a
                     href="${url}"
                     target="_blank"
+                    rel="noopener noreferrer"
                     style="
                         display:block;
                         text-align:center;
@@ -260,37 +276,394 @@ function filtrarGCs() {
         .trim();
 
 
-    const resultado =
-        gcs.filter(gc => {
+    /*
+       Se a busca estiver vazia,
+       mostra todos os GCs.
+    */
 
-            const correspondeBusca =
-                gc.nome
-                    .toLowerCase()
-                    .includes(busca)
+    if (busca === "") {
 
-                ||
+        localizacaoBusca = null;
 
-                gc.bairro
-                    .toLowerCase()
-                    .includes(busca);
+        mostrarGCs(
+            filtrarPorDia(gcs)
+        );
 
-
-            const correspondeDia =
-                filtroAtual === "todos"
-
-                ||
-
-                gc.dia === filtroAtual;
+        return;
+    }
 
 
-            return correspondeBusca && correspondeDia;
+    /*
+       Primeiro tenta encontrar
+       pelo nome ou bairro.
+    */
 
-        });
+    const resultadoDireto =
+        filtrarPorDia(
+            gcs.filter(gc => {
+
+                return (
+
+                    gc.nome
+                        .toLowerCase()
+                        .includes(busca)
+
+                    ||
+
+                    gc.bairro
+                        .toLowerCase()
+                        .includes(busca)
+
+                );
+
+            })
+        );
 
 
-    mostrarGCs(resultado);
+    /*
+       Se encontrou algum resultado,
+       mostra normalmente.
+    */
+
+    if (resultadoDireto.length > 0) {
+
+        localizacaoBusca = null;
+
+        mostrarGCs(resultadoDireto);
+
+        return;
+    }
+
+
+    /*
+       Se não encontrou nenhum GC,
+       não mostra "zero" imediatamente.
+       A pessoa pode procurar o bairro
+       apertando ENTER.
+    */
+
+    mostrarListaMensagem(`
+        <h3>Buscar este bairro</h3>
+
+        <div class="gc-info">
+            Não encontramos um GC exatamente nesse bairro.
+            <br><br>
+            Pressione <strong>Enter</strong> para encontrar
+            os GCs mais próximos.
+        </div>
+    `);
 
 }
+
+
+/* =========================
+   FILTRAR POR DIA
+========================= */
+
+function filtrarPorDia(lista) {
+
+    return lista.filter(gc => {
+
+        return (
+            filtroAtual === "todos"
+            ||
+            gc.dia === filtroAtual
+        );
+
+    });
+
+}
+
+
+/* =========================
+   MENSAGEM NA LISTA
+========================= */
+
+function mostrarListaMensagem(conteudo) {
+
+    const container =
+        document.getElementById("gc-list");
+
+    const contador =
+        document.getElementById("total-gcs");
+
+
+    contador.textContent = "";
+
+
+    container.innerHTML = `
+
+        <div class="gc-card">
+
+            ${conteudo}
+
+        </div>
+
+    `;
+
+}
+
+
+/* =========================
+   BUSCAR BAIRRO
+========================= */
+
+async function buscarBairro() {
+
+    const input =
+        document.getElementById("search");
+
+    const busca =
+        input.value.trim();
+
+
+    if (busca.length < 2) {
+        return;
+    }
+
+
+    mostrarListaMensagem(`
+        <h3>Procurando...</h3>
+
+        <div class="gc-info">
+            Encontrando os GCs mais próximos de
+            <strong>${busca}</strong>.
+        </div>
+    `);
+
+
+    try {
+
+        const url =
+            `https://nominatim.openstreetmap.org/search?` +
+            `format=jsonv2` +
+            `q=${encodeURIComponent(
+                busca + ", Ipatinga, Minas Gerais, Brasil"
+            )}` +
+            `&limit=5`;
+
+
+        const resposta =
+            await fetch(url, {
+                headers: {
+                    "Accept-Language": "pt-BR"
+                }
+            });
+
+
+        if (!resposta.ok) {
+            throw new Error("Erro na busca");
+        }
+
+
+        const resultados =
+            await resposta.json();
+
+
+        if (!resultados.length) {
+
+            mostrarListaMensagem(`
+                <h3>Bairro não encontrado</h3>
+
+                <div class="gc-info">
+                    Não conseguimos localizar
+                    <strong>${busca}</strong>.
+                    <br><br>
+                    Tente escrever o nome completo do bairro.
+                </div>
+            `);
+
+            return;
+        }
+
+
+        /*
+           Preferimos resultados que estejam
+           em Ipatinga ou Timóteo.
+        */
+
+        const resultadoLocal =
+            resultados.find(resultado => {
+
+                const nome =
+                    resultado.display_name
+                    .toLowerCase();
+
+                return (
+                    nome.includes("ipatinga")
+                    ||
+                    nome.includes("timóteo")
+                );
+
+            }) || resultados[0];
+
+
+        localizacaoBusca = {
+
+            lat:
+                parseFloat(
+                    resultadoLocal.lat
+                ),
+
+            lng:
+                parseFloat(
+                    resultadoLocal.lon
+                )
+
+        };
+
+
+        /*
+           Ordena os GCs pela distância
+           até o bairro pesquisado.
+        */
+
+        const ordenados =
+            filtrarPorDia(
+                [...gcs].sort(
+                    (a, b) => {
+
+                        const distanciaA =
+                            calcularDistancia(
+                                localizacaoBusca.lat,
+                                localizacaoBusca.lng,
+                                a.latitude,
+                                a.longitude
+                            );
+
+
+                        const distanciaB =
+                            calcularDistancia(
+                                localizacaoBusca.lat,
+                                localizacaoBusca.lng,
+                                b.latitude,
+                                b.longitude
+                            );
+
+
+                        return (
+                            distanciaA -
+                            distanciaB
+                        );
+
+                    }
+                )
+            );
+
+
+        /*
+           Mostra os GCs no mapa.
+        */
+
+        mostrarGCs(ordenados);
+
+
+        /*
+           Centraliza o mapa no bairro pesquisado.
+        */
+
+        mapa.setView(
+            [
+                localizacaoBusca.lat,
+                localizacaoBusca.lng
+            ],
+            13
+        );
+
+
+    } catch (erro) {
+
+        console.error(erro);
+
+
+        mostrarListaMensagem(`
+            <h3>Não foi possível localizar o bairro</h3>
+
+            <div class="gc-info">
+                Tente novamente ou procure pelo nome
+                de um GC.
+            </div>
+        `);
+
+    }
+
+}
+
+
+/* =========================
+   ENTER NA BUSCA
+========================= */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        const campoBusca =
+            document.getElementById("search");
+
+
+        campoBusca.addEventListener(
+            "keydown",
+            evento => {
+
+                if (
+                    evento.key === "Enter"
+                ) {
+
+                    const busca =
+                        campoBusca.value
+                        .trim();
+
+
+                    /*
+                       Só faz a busca externa
+                       quando não existe um
+                       resultado direto.
+                    */
+
+                    const resultadoDireto =
+                        filtrarPorDia(
+                            gcs.filter(gc => {
+
+                                return (
+
+                                    gc.nome
+                                        .toLowerCase()
+                                        .includes(
+                                            busca.toLowerCase()
+                                        )
+
+                                    ||
+
+                                    gc.bairro
+                                        .toLowerCase()
+                                        .includes(
+                                            busca.toLowerCase()
+                                        )
+
+                                );
+
+                            })
+                        );
+
+
+                    if (
+                        busca.length >= 2 &&
+                        resultadoDireto.length === 0
+                    ) {
+
+                        buscarBairro();
+
+                    }
+
+                }
+
+            }
+
+        );
+
+    }
+);
 
 
 /* =========================
@@ -313,6 +686,7 @@ function filtrarDia(dia, botao) {
 
 
     filtrarGCs();
+
 }
 
 
@@ -347,6 +721,9 @@ function usarMinhaLocalizacao() {
             };
 
 
+            localizacaoBusca = null;
+
+
             mapa.setView(
                 [
                     localizacaoUsuario.lat,
@@ -356,18 +733,28 @@ function usarMinhaLocalizacao() {
             );
 
 
-            L.circleMarker(
-                [
-                    localizacaoUsuario.lat,
-                    localizacaoUsuario.lng
-                ],
-                {
-                    radius: 8,
-                    color: "#168cff",
-                    fillColor: "#168cff",
-                    fillOpacity: 0.9
-                }
-            ).addTo(mapa);
+            if (marcadorLocalizacao) {
+
+                mapa.removeLayer(
+                    marcadorLocalizacao
+                );
+
+            }
+
+
+            marcadorLocalizacao =
+                L.circleMarker(
+                    [
+                        localizacaoUsuario.lat,
+                        localizacaoUsuario.lng
+                    ],
+                    {
+                        radius: 8,
+                        color: "#168cff",
+                        fillColor: "#168cff",
+                        fillOpacity: 0.9
+                    }
+                ).addTo(mapa);
 
 
             ordenarPorDistancia();
@@ -399,30 +786,35 @@ function ordenarPorDistancia() {
 
 
     const ordenados =
-        [...gcs].sort(
-            (a, b) => {
+        filtrarPorDia(
+            [...gcs].sort(
+                (a, b) => {
 
-                const distanciaA =
-                    calcularDistancia(
-                        localizacaoUsuario.lat,
-                        localizacaoUsuario.lng,
-                        a.latitude,
-                        a.longitude
+                    const distanciaA =
+                        calcularDistancia(
+                            localizacaoUsuario.lat,
+                            localizacaoUsuario.lng,
+                            a.latitude,
+                            a.longitude
+                        );
+
+
+                    const distanciaB =
+                        calcularDistancia(
+                            localizacaoUsuario.lat,
+                            localizacaoUsuario.lng,
+                            b.latitude,
+                            b.longitude
+                        );
+
+
+                    return (
+                        distanciaA -
+                        distanciaB
                     );
 
-
-                const distanciaB =
-                    calcularDistancia(
-                        localizacaoUsuario.lat,
-                        localizacaoUsuario.lng,
-                        b.latitude,
-                        b.longitude
-                    );
-
-
-                return distanciaA - distanciaB;
-
-            }
+                }
+            )
         );
 
 
