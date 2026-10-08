@@ -1,1 +1,256 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <title>Encontre seu GC | Legacy Ipatinga</title>
+
+    <!-- Leaflet -->
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIINfQ3q5R7l1f0jv5h5G7X3F5xG6m2QkM="
+        crossorigin=""
+    />
+
+    <!-- Nosso CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- ========================= -->
+    <!-- HERO -->
+    <!-- ========================= -->
+
+    <header class="hero">
+
+        <div class="hero-overlay"></div>
+
+        <div class="hero-content">
+
+            <div class="logo">
+                LEGACY
+                <span>IPATINGA</span>
+            </div>
+
+            <div class="eyebrow">
+                COMUNHÃO / PALAVRA / VIDA REAL
+            </div>
+
+            <h1>
+                Encontre<br>
+                seu <span>GC.</span>
+            </h1>
+
+            <p>
+                Um lugar para conhecer pessoas,
+                viver a fé e caminhar junto.
+            </p>
+
+            <button
+                class="primary-button"
+                onclick="irParaMapa()"
+            >
+                📍 ENCONTRAR MEU GC
+                <span>→</span>
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- ========================= -->
+    <!-- O QUE É UM GC -->
+    <!-- ========================= -->
+
+    <section class="about">
+
+        <div class="section-label">
+            SOBRE O GC
+        </div>
+
+        <h2>
+            O que é um GC?
+        </h2>
+
+        <p>
+            GC é um pequeno grupo que se reúne durante a semana
+            para compartilhar a vida, estudar a Bíblia,
+            conversar e crescer junto.
+        </p>
+
+        <div class="highlight">
+            Você não precisa caminhar sozinho.
+        </div>
+
+    </section>
+
+
+    <!-- ========================= -->
+    <!-- MAPA -->
+    <!-- ========================= -->
+
+    <section
+        class="map-section"
+        id="map-section"
+    >
+
+        <div class="section-header">
+
+            <div>
+                <div class="section-label">
+                    ENCONTRE
+                </div>
+
+                <h2>
+                    Um GC perto de você.
+                </h2>
+            </div>
+
+            <button
+                class="location-button"
+                onclick="usarMinhaLocalizacao()"
+            >
+                📍 Usar minha localização
+            </button>
+
+        </div>
+
+
+        <!-- BUSCA -->
+
+        <div class="search-box">
+
+            <span>⌕</span>
+
+            <input
+                type="text"
+                id="search"
+                placeholder="Buscar por bairro ou nome do GC..."
+                oninput="filtrarGCs()"
+            >
+
+        </div>
+
+
+        <!-- FILTROS -->
+
+        <div class="filters">
+
+            <button
+                class="filter active"
+                onclick="filtrarDia('todos', this)"
+            >
+                Todos
+            </button>
+
+            <button
+                class="filter"
+                onclick="filtrarDia('Segunda-feira', this)"
+            >
+                Seg
+            </button>
+
+            <button
+                class="filter"
+                onclick="filtrarDia('Terça-feira', this)"
+            >
+                Ter
+            </button>
+
+            <button
+                class="filter"
+                onclick="filtrarDia('Quarta-feira', this)"
+            >
+                Qua
+            </button>
+
+            <button
+                class="filter"
+                onclick="filtrarDia('Quinta-feira', this)"
+            >
+                Qui
+            </button>
+
+            <button
+                class="filter"
+                onclick="filtrarDia('Sexta-feira', this)"
+            >
+                Sex
+            </button>
+
+    </div>
+
+
+        <!-- MAPA -->
+
+        <div
+            id="map"
+            class="map"
+        ></div>
+
+
+        <!-- LISTA -->
+
+        <div class="list-header">
+
+            <h3>
+                GCs disponíveis
+            </h3>
+
+            <span id="total-gcs">
+                0 GCs
+            </span>
+
+        </div>
+
+
+        <div
+            id="gc-list"
+            class="gc-list"
+        ></div>
+
+    </section>
+
+
+    <!-- ========================= -->
+    <!-- FOOTER -->
+    <!-- ========================= -->
+
+    <footer>
+
+        <div class="footer-logo">
+            LEGACY
+            <span>IPATINGA</span>
+        </div>
+
+        <p>
+            Igreja Batista da Lagoinha
+        </p>
+
+    </footer>
+
+
+    <!-- Leaflet JS -->
+
+    <script
+        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""
+    ></script>
+
+
+    <!-- Dados dos GCs -->
+
+    <script src="gcs.js"></script>
+
+
+    <!-- Nosso JavaScript -->
+
+    <script src="app.js"></script>
+
+</body>
+</html>
