@@ -4,6 +4,14 @@ let marcadores = [];
 let filtroDia = "Todos";
 window.localizacaoBusca = null;
 
+// ÍCONE PERSONALIZADO DOS GCs
+const iconeGC = L.icon({
+    iconUrl: "./pin_gc.png",
+    iconSize: [42, 42],
+    iconAnchor: [21, 42],
+    popupAnchor: [0, -42]
+});
+
 // ========================================
 // BAIRROS / REGIÕES DE IPATINGA
 // ========================================
@@ -146,7 +154,8 @@ function mostrarGCs(lista, somenteMaisProximo = false) {
     listaElemento.innerHTML = "";
 
     if (totalElemento) {
-        totalElemento.textContent = `${lista.length} GC${lista.length === 1 ? "" : "s"}`;
+        totalElemento.textContent =
+            `${lista.length} GC${lista.length === 1 ? "" : "s"}`;
     }
 
     marcadores.forEach(marcador => mapa.removeLayer(marcador));
@@ -204,9 +213,12 @@ function mostrarGCs(lista, somenteMaisProximo = false) {
 
         listaElemento.appendChild(card);
 
-        // Em pesquisa por bairro, exibe somente o marcador do GC mais próximo.
+        // Usa a casinha com coração como marcador personalizado.
         if (!somenteMaisProximo || index === 0) {
-            const marcador = L.marker([gc.latitude, gc.longitude])
+            const marcador = L.marker(
+                [gc.latitude, gc.longitude],
+                { icon: iconeGC }
+            )
                 .addTo(mapa)
                 .bindPopup(`
                     <strong>${gc.nome}</strong><br>
@@ -236,7 +248,6 @@ function filtrarGCs() {
         return;
     }
 
-    // Primeiro, procura GCs diretamente pelo nome ou bairro.
     const resultadoDireto = filtrarPorDia(
         gcs.filter(gc =>
             normalizarTexto(gc.nome).includes(busca) ||
@@ -250,7 +261,6 @@ function filtrarGCs() {
         return;
     }
 
-    // Depois, procura a referência do bairro.
     const bairroEncontrado = bairros.find(bairro =>
         normalizarTexto(bairro.nome).includes(busca)
     );
@@ -301,7 +311,6 @@ function filtrarGCs() {
 
 // ========================================
 // FILTROS DOS DIAS
-// Compatível com os onclick do index.html
 // ========================================
 
 function filtrarDia(dia, botao) {
@@ -349,7 +358,9 @@ function irParaMapa() {
 // ========================================
 
 function abrirRota(latitude, longitude) {
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
+    const url =
+        `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
+
     window.open(url, "_blank");
 }
 
@@ -383,11 +394,12 @@ function usarMinhaLocalizacao() {
             });
 
             mostrarGCs(ordenados);
-
             mapa.setView([latitude, longitude], 13);
         },
         () => {
-            alert("Não foi possível acessar sua localização. Confira as permissões do navegador.");
+            alert(
+                "Não foi possível acessar sua localização. Confira as permissões do navegador."
+            );
         }
     );
 }
